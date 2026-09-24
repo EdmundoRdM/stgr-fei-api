@@ -1,0 +1,1220 @@
+openapi: 3.0.0
+info:
+  title: SGTR-FEI API - Sistema de Gestión de Trabajos Recepcionales
+  version: 1.0.0
+  description: Documentación interactiva de la API RESTful para el Sistema de
+    Gestión de Información de Trabajos Recepcionales de la Facultad de
+    Estadística e Informática (FEI) de la Universidad Veracruzana.
+  contact:
+    name: Facultad de Estadística e Informática - UV
+    url: https://www.uv.mx/fei/
+servers:
+  - url: http://localhost:3000
+    description: Servidor de desarrollo local
+components:
+  schemas:
+    TrabajoRecepcional:
+      type: object
+      properties:
+        Id_TrabajoR:
+          type: integer
+          example: 1
+        Titulo:
+          type: string
+          example: Desarrollo de API para SGTR-FEI
+        Folio:
+          type: string
+          example: FEI-TR-2026-001
+        Modalidad:
+          type: string
+          example: Tesis
+        Fecha_defensa:
+          type: string
+          format: date-time
+          example: 2026-06-25T10:00:00.000Z
+        Resultado:
+          type: string
+          example: Aprobado por Unanimidad
+        Id_Carrera:
+          type: integer
+          example: 1
+        Id_Lugar:
+          type: integer
+          example: 1
+        Id_Estado:
+          type: integer
+          example: 1
+    CrearTrabajoDTO:
+      type: object
+      required:
+        - Titulo
+        - Modalidad
+        - Id_Carrera
+      properties:
+        Titulo:
+          type: string
+          example: Sistema de Gestión de Información de Trabajos Recepcionales
+        Modalidad:
+          type: string
+          example: Monografía
+        Id_Carrera:
+          type: integer
+          example: 1
+        Id_Lugar:
+          type: integer
+          example: 2
+        Fecha_defensa:
+          type: string
+          format: date-time
+          example: 2026-07-15T09:30:00.000Z
+    ActualizarTrabajoDTO:
+      type: object
+      properties:
+        Titulo:
+          type: string
+          example: Título actualizado del trabajo
+        Modalidad:
+          type: string
+          example: Tesina
+        Fecha_defensa:
+          type: string
+          format: date-time
+          example: 2026-08-10T11:00:00.000Z
+        Id_Lugar:
+          type: integer
+          example: 1
+        Id_Carrera:
+          type: integer
+          example: 1
+        Folio:
+          type: string
+          example: FEI-TR-2026-042
+          description: Solo editable si el trabajo está en estado Finalizado
+        Resultado:
+          type: string
+          example: Aprobado por Mayoría
+          description: Solo editable si el trabajo está en estado Finalizado
+    FinalizarTrabajoDTO:
+      type: object
+      required:
+        - Folio
+        - Resultado
+      properties:
+        Folio:
+          type: string
+          example: FEI-TR-2026-001
+        Resultado:
+          type: string
+          example: Aprobado por Unanimidad
+    RechazarTrabajoDTO:
+      type: object
+      properties:
+        motivo:
+          type: string
+          example: El título no coincide con el protocolo autorizado
+    AsignarAcademicoDTO:
+      type: object
+      required:
+        - Id_TrabajoR
+        - Numero_Personal
+        - Id_rol
+      properties:
+        Id_TrabajoR:
+          type: integer
+          example: 1
+        Numero_Personal:
+          type: integer
+          example: 12345
+        Id_rol:
+          type: integer
+          example: 1
+          description: "1: Director, 2: Codirector, 3: Sinodal, etc."
+    AsignarEstudianteDTO:
+      type: object
+      required:
+        - Id_TrabajoR
+        - Matricula
+      properties:
+        Id_TrabajoR:
+          type: integer
+          example: 1
+        Matricula:
+          type: string
+          example: s20014589
+    SecretariaGrupo:
+      type: object
+      properties:
+        Numero_Personal:
+          type: string
+          example: S001
+        Id_Secretaria:
+          type: integer
+          example: 1
+        Nombre:
+          type: string
+          example: Carmen
+        ApellidoP:
+          type: string
+          example: López
+        ApellidoM:
+          type: string
+          example: Hernández
+        CorreoInstitucional:
+          type: string
+          example: carlopez@uv.mx
+        Rol:
+          type: string
+          example: Secretaria de Grupo
+    CrearSecretariaDTO:
+      type: object
+      required:
+        - Numero_Personal
+        - Nombre
+        - ApellidoP
+        - ApellidoM
+        - CorreoInstitucional
+      properties:
+        Numero_Personal:
+          type: string
+          example: S001
+        Nombre:
+          type: string
+          example: Carmen
+        ApellidoP:
+          type: string
+          example: López
+        ApellidoM:
+          type: string
+          example: Hernández
+        CorreoInstitucional:
+          type: string
+          example: carlopez@uv.mx
+        Contrasenia:
+          type: string
+          example: secre2026
+        Rol:
+          type: string
+          example: Secretaria de Grupo
+    BitacoraAccion:
+      type: object
+      properties:
+        IdAccion:
+          type: integer
+          example: 1
+        Nombreaccion:
+          type: string
+          example: Aceptó el documento
+        Fecha:
+          type: string
+          format: date-time
+          example: 2026-09-21T10:00:00.000Z
+        Numero_Personal:
+          type: string
+          example: S001
+        Id_TrabajoR:
+          type: integer
+          example: 1
+        Detalles:
+          type: string
+          example: Aceptó el documento Comprobante de no adeudo...
+    RegistrarEntregaDTO:
+      type: object
+      required:
+        - Id_TrabajoR
+        - Matricula
+        - Id_Documento
+      properties:
+        Id_TrabajoR:
+          type: integer
+          example: 1
+        Matricula:
+          type: string
+          example: s20014589
+        Id_Documento:
+          type: integer
+          example: 1
+        Entregado:
+          type: boolean
+          example: true
+        Numero_Personal:
+          type: string
+          example: S001
+    ErrorRespuesta:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Mensaje descriptivo del error
+        detalle:
+          type: string
+          example: Información adicional del error
+paths:
+  /api/trabajos:
+    post:
+      summary: Crear un nuevo trabajo recepcional en estado Borrador (CU-01)
+      tags:
+        - Trabajos Recepcionales
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CrearTrabajoDTO"
+      responses:
+        "201":
+          description: Trabajo recepcional creado exitosamente como borrador
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrabajoRecepcional"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorRespuesta"
+    get:
+      summary: Listar trabajos recepcionales con filtros opcionales
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: query
+          name: Id_Carrera
+          schema:
+            type: integer
+          description: Filtrar por identificador de la carrera
+        - in: query
+          name: Id_Estado
+          schema:
+            type: integer
+          description: Filtrar por identificador del estado (1:Borrador, 2:Registrado,
+            3:Aprobado, 4:Generado, 5:Finalizado)
+        - in: query
+          name: Modalidad
+          schema:
+            type: string
+          description: Filtrar por modalidad (Tesis, Tesina, Monografía, etc.)
+      responses:
+        "200":
+          description: Lista de trabajos recepcionales obtenida correctamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrabajoRecepcional"
+        "500":
+          description: Error al consultar los registros
+  "/api/trabajos/{id}":
+    get:
+      summary: Obtener el detalle completo de un trabajo recepcional por su ID
+      description: Incluye carrera, lugar, estado, estudiantes vinculados y académicos
+        con sus roles de participación.
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Registro encontrado con detalle completo
+        "404":
+          description: Trabajo recepcional no encontrado
+    put:
+      summary: Editar información de un trabajo recepcional (CU-05)
+      description: En estados Aprobado o Generado los campos Folio y Resultado están
+        bloqueados. En estado Finalizado todos los campos son editables.
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActualizarTrabajoDTO"
+      responses:
+        "200":
+          description: Trabajo recepcional actualizado con éxito
+        "400":
+          description: Error de validación o campo bloqueado según el estado
+    delete:
+      summary: Eliminar registro de trabajo recepcional
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Registro eliminado correctamente
+        "400":
+          description: Error al eliminar el registro
+  "/api/trabajos/{id}/enviar":
+    post:
+      summary: Enviar trabajo recepcional a validación de Secretaría (CU-02)
+      description: Cambia el estado del trabajo de Borrador a Registrado.
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Trabajo recepcional enviado a validación con éxito
+        "400":
+          description: El trabajo no se encuentra en estado Borrador
+  "/api/trabajos/{id}/validar":
+    post:
+      summary: Aprobar trabajo recepcional (CU-03)
+      description: Cambia el estado del trabajo de Registrado a Aprobado por la
+        Secretaría de Facultad.
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Trabajo recepcional aprobado con éxito
+        "400":
+          description: El trabajo no se encuentra en estado Registrado
+  "/api/trabajos/{id}/rechazar":
+    post:
+      summary: Rechazar trabajo recepcional y devolver a borrador (CU-04)
+      description: Regresa el estado del trabajo a Borrador para correcciones del
+        profesor responsable.
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RechazarTrabajoDTO"
+      responses:
+        "200":
+          description: Trabajo recepcional devuelto a borrador
+        "400":
+          description: El trabajo no se encuentra en estado Registrado
+  "/api/trabajos/{id}/finalizar":
+    post:
+      summary: Finalizar trabajo recepcional con asignación de Folio y Resultado formal
+      description: Registra el Folio oficial y el Resultado de la defensa, cambiando
+        el estado a Finalizado.
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinalizarTrabajoDTO"
+      responses:
+        "200":
+          description: Trabajo recepcional finalizado con éxito
+        "400":
+          description: Folio o Resultado inválidos
+  "/api/trabajos/{id}/estado":
+    patch:
+      summary: Cambio manual de estado (mantenimiento administrativo)
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nuevoEstado
+              properties:
+                nuevoEstado:
+                  type: string
+                  example: Aprobado
+      responses:
+        "200":
+          description: Estado actualizado con éxito
+        "400":
+          description: Estado no válido
+  "/api/trabajos/{id}/generar-acta":
+    post:
+      summary: Generar acta de trabajo recepcional tras verificar el checklist
+        completo (CU-06)
+      description: Cambia el estado del trabajo de Aprobado a Generado, habilitando la
+        posterior finalización del trámite.
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Numero_Personal:
+                  type: string
+                  example: S001
+      responses:
+        "200":
+          description: Acta generada exitosamente, estado cambiado a Generado
+        "400":
+          description: El trabajo no está en estado Aprobado o faltan documentos en el
+            checklist
+  "/api/trabajos/{id}/documentos":
+    get:
+      summary: Obtener el checklist de documentos requeridos y entregados para este
+        trabajo
+      tags:
+        - Documentos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Checklist de documentos por estudiante
+    post:
+      summary: Registrar entrega de un documento para este trabajo recepcional
+      tags:
+        - Documentos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Matricula
+                - Id_Documento
+              properties:
+                Matricula:
+                  type: string
+                Id_Documento:
+                  type: integer
+                Entregado:
+                  type: boolean
+                Numero_Personal:
+                  type: string
+      responses:
+        "200":
+          description: Entrega registrada exitosamente
+    delete:
+      summary: Revocar la entrega de un documento para este trabajo recepcional
+      tags:
+        - Documentos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Matricula
+                - Id_Documento
+              properties:
+                Matricula:
+                  type: string
+                Id_Documento:
+                  type: integer
+                Numero_Personal:
+                  type: string
+      responses:
+        "200":
+          description: Entrega revocada exitosamente
+  "/api/trabajos/{id}/documentos/lote":
+    post:
+      summary: Registrar entregas de documentos en lote para este trabajo recepcional
+      tags:
+        - Documentos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - entregas
+              properties:
+                Numero_Personal:
+                  type: string
+                entregas:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - Matricula
+                      - Id_Documento
+                    properties:
+                      Matricula:
+                        type: string
+                      Id_Documento:
+                        type: integer
+                      Entregado:
+                        type: boolean
+      responses:
+        "200":
+          description: Entregas procesadas exitosamente
+  /api/secretarias:
+    post:
+      summary: Registrar una nueva secretaria de grupo
+      tags:
+        - Secretarias
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Numero_Personal
+                - Nombre
+                - ApellidoP
+                - ApellidoM
+                - CorreoInstitucional
+              properties:
+                Numero_Personal:
+                  type: string
+                  example: S001
+                Nombre:
+                  type: string
+                  example: Carmen
+                ApellidoP:
+                  type: string
+                  example: López
+                ApellidoM:
+                  type: string
+                  example: Hernández
+                CorreoInstitucional:
+                  type: string
+                  example: carlopez@uv.mx
+                Contrasenia:
+                  type: string
+                  example: secre2026
+                Rol:
+                  type: string
+                  example: Secretaria de Grupo
+      responses:
+        "201":
+          description: Secretaria registrada exitosamente
+        "400":
+          description: Datos inválidos o número de personal/correo duplicado
+    get:
+      summary: Listar todas las secretarias registradas
+      tags:
+        - Secretarias
+      parameters:
+        - in: query
+          name: Rol
+          schema:
+            type: string
+          description: Filtrar por rol
+      responses:
+        "200":
+          description: Lista de secretarias obtenida exitosamente
+  "/api/secretarias/{id}":
+    get:
+      summary: Obtener el detalle de una secretaria por su número de personal o ID
+      tags:
+        - Secretarias
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Número de personal o Id_Secretaria
+      responses:
+        "200":
+          description: Registro de la secretaria encontrado
+        "404":
+          description: Secretaria no encontrada
+    put:
+      summary: Actualizar información de una secretaria
+      tags:
+        - Secretarias
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Número de personal o Id_Secretaria
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Nombre:
+                  type: string
+                  example: Carmen María
+                ApellidoP:
+                  type: string
+                  example: López
+                ApellidoM:
+                  type: string
+                  example: Hernández
+                CorreoInstitucional:
+                  type: string
+                  example: carlopez@uv.mx
+                Contrasenia:
+                  type: string
+                  example: nuevaClave2026
+      responses:
+        "200":
+          description: Secretaria actualizada con éxito
+        "400":
+          description: Error en los datos proporcionados
+    delete:
+      summary: Eliminar una secretaria de grupo
+      tags:
+        - Secretarias
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Número de personal o Id_Secretaria
+      responses:
+        "200":
+          description: Secretaria eliminada exitosamente
+        "400":
+          description: Error al eliminar
+  "/api/participantes/trabajo/{idTrabajo}":
+    get:
+      summary: Obtener el resumen completo de participantes (académicos y estudiantes)
+        de un trabajo recepcional
+      tags:
+        - Participantes
+      parameters:
+        - in: path
+          name: idTrabajo
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Listado con arreglos de académicos y estudiantes asignados
+        "500":
+          description: Error en la consulta
+  /api/participantes/academico:
+    post:
+      summary: Asignar un académico con rol (director, codirector, sinodal) a un
+        trabajo recepcional
+      tags:
+        - Participantes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AsignarAcademicoDTO"
+      responses:
+        "201":
+          description: Académico asignado exitosamente
+        "400":
+          description: Parámetros inválidos o asignación duplicada
+  "/api/participantes/academico/trabajo/{idTrabajo}":
+    get:
+      summary: Listar únicamente los académicos participantes de un trabajo recepcional
+      tags:
+        - Participantes
+      parameters:
+        - in: path
+          name: idTrabajo
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Lista de académicos participantes
+  "/api/participantes/academico/{id}":
+    delete:
+      summary: Remover la asignación de un académico de un trabajo recepcional
+      tags:
+        - Participantes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de la participación (Id_Participacion)
+      responses:
+        "200":
+          description: Académico removido exitosamente
+        "400":
+          description: Asignación no encontrada
+  /api/participantes/estudiante:
+    post:
+      summary: Asignar un estudiante a un trabajo recepcional
+      tags:
+        - Participantes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AsignarEstudianteDTO"
+      responses:
+        "201":
+          description: Estudiante asignado exitosamente
+        "400":
+          description: Parámetros inválidos o estudiante ya asignado al trabajo
+  "/api/participantes/estudiante/trabajo/{idTrabajo}":
+    get:
+      summary: Listar los estudiantes asignados a un trabajo recepcional
+      tags:
+        - Participantes
+      parameters:
+        - in: path
+          name: idTrabajo
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Lista de estudiantes asignados
+  "/api/participantes/estudiante/{id}":
+    delete:
+      summary: Remover la asignación de un estudiante de un trabajo recepcional
+      tags:
+        - Participantes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de la asignación del estudiante (Id_EstudianteTrabajo)
+      responses:
+        "200":
+          description: Estudiante desvinculado exitosamente
+        "400":
+          description: Asignación no encontrada
+  /api/estudiantes:
+    post:
+      summary: Registrar un nuevo estudiante
+      tags:
+        - Estudiantes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Matricula
+                - NombreCompleto
+                - CorreoInstitucional
+                - Id_Carrera
+              properties:
+                Matricula:
+                  type: string
+                  example: s20014589
+                NombreCompleto:
+                  type: string
+                  example: Carlos Morales Delgado
+                CorreoInstitucional:
+                  type: string
+                  example: zs20014589@estudiantes.uv.mx
+                CorreoAlterno:
+                  type: string
+                  example: carlos.md@gmail.com
+                Id_Carrera:
+                  type: integer
+                  example: 1
+      responses:
+        "201":
+          description: Estudiante registrado exitosamente
+        "400":
+          description: Matrícula duplicada o datos inválidos
+    get:
+      summary: Listar todos los estudiantes registrados
+      tags:
+        - Estudiantes
+      responses:
+        "200":
+          description: Lista de estudiantes obtenida exitosamente
+  /api/documentos:
+    get:
+      summary: Obtener el catálogo oficial de documentos requeridos para titulación
+      tags:
+        - Documentos
+      responses:
+        "200":
+          description: Lista de los 8 documentos oficiales de titulación
+  "/api/documentos/trabajo/{id}":
+    get:
+      summary: Obtener el checklist de entrega de documentos de un trabajo recepcional
+      tags:
+        - Documentos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Checklist completo con detalle de documentos por cada estudiante
+            del trabajo
+        "404":
+          description: Trabajo recepcional no encontrado
+  /api/documentos/entrega:
+    post:
+      summary: Registrar o actualizar la entrega de un documento
+      tags:
+        - Documentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_TrabajoR
+                - Matricula
+                - Id_Documento
+              properties:
+                Id_TrabajoR:
+                  type: integer
+                  example: 1
+                Matricula:
+                  type: string
+                  example: s20014589
+                Id_Documento:
+                  type: integer
+                  example: 1
+                Entregado:
+                  type: boolean
+                  example: true
+                Numero_Personal:
+                  type: string
+                  example: S001
+      responses:
+        "200":
+          description: Entrega registrada y auditada en bitácora
+        "400":
+          description: Error en los datos proporcionados
+    delete:
+      summary: Revocar o eliminar el registro de entrega de un documento
+      tags:
+        - Documentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_TrabajoR
+                - Matricula
+                - Id_Documento
+              properties:
+                Id_TrabajoR:
+                  type: integer
+                  example: 1
+                Matricula:
+                  type: string
+                  example: s20014589
+                Id_Documento:
+                  type: integer
+                  example: 1
+                Numero_Personal:
+                  type: string
+                  example: S001
+      responses:
+        "200":
+          description: Entrega revocada y auditada en bitácora
+        "400":
+          description: Error al revocar entrega
+  /api/documentos/lote:
+    post:
+      summary: Registrar entregas de documentos en lote
+      tags:
+        - Documentos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_TrabajoR
+                - entregas
+              properties:
+                Id_TrabajoR:
+                  type: integer
+                  example: 1
+                Numero_Personal:
+                  type: string
+                  example: S001
+                entregas:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - Matricula
+                      - Id_Documento
+                    properties:
+                      Matricula:
+                        type: string
+                        example: s20014589
+                      Id_Documento:
+                        type: integer
+                        example: 2
+                      Entregado:
+                        type: boolean
+                        example: true
+      responses:
+        "200":
+          description: Entregas procesadas exitosamente
+        "400":
+          description: Error al procesar lote
+  /api/bitacora:
+    get:
+      summary: Consultar el historial de acciones en la bitácora
+      tags:
+        - Bitácora
+      parameters:
+        - in: query
+          name: Numero_Personal
+          schema:
+            type: string
+          description: Filtrar por número de personal del usuario/secretaria
+        - in: query
+          name: Id_TrabajoR
+          schema:
+            type: integer
+          description: Filtrar por ID de trabajo recepcional
+        - in: query
+          name: Nombreaccion
+          schema:
+            type: string
+          description: Filtrar por nombre de acción (búsqueda parcial)
+        - in: query
+          name: fechaInicio
+          schema:
+            type: string
+            format: date
+          description: Fecha inicial de búsqueda (YYYY-MM-DD)
+        - in: query
+          name: fechaFin
+          schema:
+            type: string
+            format: date
+          description: Fecha final de búsqueda (YYYY-MM-DD)
+      responses:
+        "200":
+          description: Listado de acciones registradas ordenadas cronológicamente
+        "500":
+          description: Error al consultar la bitácora
+    post:
+      summary: Registrar manualmente una acción en la bitácora
+      tags:
+        - Bitácora
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Nombreaccion
+              properties:
+                Nombreaccion:
+                  type: string
+                  example: Revisión manual de expediente
+                Numero_Personal:
+                  type: string
+                  example: S001
+                Id_TrabajoR:
+                  type: integer
+                  example: 1
+                Detalles:
+                  type: string
+                  example: Se cotejó la documentación impresa con la secretaría
+      responses:
+        "201":
+          description: Acción registrada con éxito
+        "400":
+          description: Datos inválidos
+  /api/auth/login:
+    post:
+      summary: Iniciar sesión en el sistema SGTR-FEI
+      tags:
+        - Autenticación
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - correo
+                - password
+              properties:
+                correo:
+                  type: string
+                  example: profesor@uv.mx
+                password:
+                  type: string
+                  example: secret123
+      responses:
+        "200":
+          description: Autenticación exitosa
+        "401":
+          description: Credenciales incorrectas
+  /api/academicos:
+    post:
+      summary: Registrar un nuevo académico
+      tags:
+        - Académicos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Numero_Personal
+                - Nombre
+                - ApellidoP
+                - ApellidoM
+                - CorreoInstitucional
+                - Password
+                - Id_Carrera
+              properties:
+                Numero_Personal:
+                  type: integer
+                  example: 24589
+                Nombre:
+                  type: string
+                  example: María
+                ApellidoP:
+                  type: string
+                  example: González
+                ApellidoM:
+                  type: string
+                  example: Pérez
+                CorreoInstitucional:
+                  type: string
+                  example: mgonzalez@uv.mx
+                Password:
+                  type: string
+                  example: temporal123
+                Id_Carrera:
+                  type: integer
+                  example: 1
+                Id_Rol:
+                  type: integer
+                  example: 1
+      responses:
+        "201":
+          description: Académico registrado exitosamente
+        "400":
+          description: Error en los datos proporcionados
+    get:
+      summary: Listar todos los académicos registrados
+      tags:
+        - Académicos
+      responses:
+        "200":
+          description: Lista de académicos obtenida exitosamente
+tags:
+  - name: Trabajos Recepcionales
+    description: Gestión del ciclo de vida de los trabajos recepcionales (Casos de
+      uso CU-01 al CU-05)
+  - name: Secretarias
+    description: Gestión y CRUD de Secretarias de Grupo (Personal Administrativo)
+  - name: Participantes
+    description: Gestión unificada de participantes asignados a trabajos
+      recepcionales (académicos y estudiantes)
+  - name: Estudiantes
+    description: Catálogo y gestión de estudiantes de las licenciaturas de la FEI
+  - name: Documentos
+    description: Catálogo institucional de documentos y control de entrega por
+      estudiante y trabajo recepcional
+  - name: Bitácora
+    description: Registro y consulta de auditoría de acciones realizadas en el sistema
+  - name: Autenticación
+    description: Gestión de inicio de sesión y credenciales de usuarios
+  - name: Académicos
+    description: Catálogo y gestión de profesores y personal académico de la FEI
