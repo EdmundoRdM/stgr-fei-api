@@ -4,6 +4,9 @@ const Academico = require('../models/Academico');
 const Estudiante = require('../models/Estudiante');
 const RolDeParticipacion = require('../models/Rol_de_participacion');
 const TrabajoRecepcional = require('../models/TrabajoRecepcional');
+const cursoService = require('./cursoService');
+const academicoService = require('./academicoService');
+const participanteExternoService = require('./participanteExternoService');
 
 
 const asignarAcademico = async (datosAsignacionAcademico) => {
@@ -48,13 +51,24 @@ const removerAcademico = async (idParticipacionAcademico) => {
 
 
 const asignarEstudiante = async (datosAsignacionEstudiante) => {
-    const { Id_TrabajoR, Matricula } = datosAsignacionEstudiante;
+    const { Id_TrabajoR, Matricula, Numero_Personal } = datosAsignacionEstudiante;
     if (!Id_TrabajoR || !Matricula) {
         throw new Error('Se requiere Id_TrabajoR y Matricula');
     }
 
     const trabajoRecepcionalEncontrado = await TrabajoRecepcional.findByPk(Id_TrabajoR);
     if (!trabajoRecepcionalEncontrado) throw new Error('Trabajo recepcional no encontrado');
+
+    // Regla de Negocio: si quien asigna es profesor, solo puede con alumnos en su grupo del periodo actual
+    if (Numero_Personal) {
+        const perfil = await academicoService.obtenerPerfilAcademico(Numero_Personal);
+        if (perfil && perfil.tipoRol === 'Profesor') {
+            const verificacion = await cursoService.esEstudianteDeProfesorEnPeriodoActual(Numero_Personal, Matricula);
+            if (!verificacion.valido) {
+                throw new Error(verificacion.razon);
+            }
+        }
+    }
 
     return await EstudianteTrabajo.create({
         Id_TrabajoR,
@@ -83,14 +97,16 @@ const removerEstudiante = async (idAsignacionEstudiante) => {
 };
 
 const obtenerTodosLosParticipantes = async (idTrabajoRecepcional) => {
-    const [listaAcademicos, listaEstudiantes] = await Promise.all([
+    const [listaAcademicos, listaEstudiantes, listaExternos] = await Promise.all([
         obtenerAcademicosPorTrabajo(idTrabajoRecepcional),
-        obtenerEstudiantesPorTrabajo(idTrabajoRecepcional)
+        obtenerEstudiantesPorTrabajo(idTrabajoRecepcional),
+        participanteExternoService.obtenerParticipantesExternosPorTrabajo(idTrabajoRecepcional)
     ]);
     return {
         Id_TrabajoR: idTrabajoRecepcional,
         academicos: listaAcademicos,
-        estudiantes: listaEstudiantes
+        estudiantes: listaEstudiantes,
+        participantesExternos: listaExternos
     };
 };
 
@@ -102,6 +118,10 @@ module.exports = {
     asignarEstudiante,
     obtenerEstudiantesPorTrabajo,
     removerEstudiante,
+
+    asignarParticipanteExterno: participanteExternoService.asignarParticipanteExternoATrabajo,
+    obtenerParticipantesExternosPorTrabajo: participanteExternoService.obtenerParticipantesExternosPorTrabajo,
+    removerParticipanteExterno: participanteExternoService.removerParticipanteExternoDeTrabajo,
 
     obtenerTodosLosParticipantes,
 

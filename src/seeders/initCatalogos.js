@@ -7,6 +7,8 @@ const Documento = require('../models/Documento');
 const PeriodosEscolares = require('../models/Periodos_Escolares');
 const Lugar = require('../models/Lugar');
 
+const CursoER = require('../models/CursoER');
+
 const seedData = async () => {
     try {
         await sequelize.authenticate();
@@ -23,7 +25,7 @@ const seedData = async () => {
         ], { ignoreDuplicates: true }); 
 
         await RolDirectivo.bulkCreate([
-            { Nombre_Rol: 'Director de factuldad' },
+            { Nombre_Rol: 'Director de facultad' },
             { Nombre_Rol: 'Secretario Académico' },
             { Nombre_Rol: 'Jefe de Carrera' }
         ], { ignoreDuplicates: true });
@@ -67,6 +69,13 @@ const seedData = async () => {
             { Nombre: 'Salon Murales', Estado: 'disponible' },
             { Nombre: 'Audiovisual', Estado: 'disponible' },
             { Nombre: 'Centro de Cómputo', Estado: 'no_disponible' }
+        ], { ignoreDuplicates: true });
+
+        await CursoER.bulkCreate([
+            { NRC: '84920', Nombre: 'Experiencia Recepcional - IS' },
+            { NRC: '84921', Nombre: 'Experiencia Recepcional - CD' },
+            { NRC: '84922', Nombre: 'Experiencia Recepcional - RSC' },
+            { NRC: '84923', Nombre: 'Experiencia Recepcional - TI' }
         ], { ignoreDuplicates: true });
 
         console.log('Seeders ejecutados correctamente. Base de datos poblada.');

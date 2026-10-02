@@ -34,7 +34,11 @@ const eliminarAcademico = async (req, res) => {
 
 const asignarEstudiante = async (req, res) => {
     try {
-        const nuevaAsignacionEstudiante = await participanteService.asignarEstudiante(req.body);
+        const numeroPersonal = req.body?.Numero_Personal || req.headers['x-numero-personal'] || req.query?.Numero_Personal || null;
+        const nuevaAsignacionEstudiante = await participanteService.asignarEstudiante({
+            ...req.body,
+            Numero_Personal: numeroPersonal
+        });
         res.status(201).json({ mensaje: 'Estudiante asignado correctamente al trabajo recepcional', nuevaAsignacion: nuevaAsignacionEstudiante });
     } catch (error) {
         res.status(400).json({ error: 'Error al asignar el estudiante', detalle: error.message });
@@ -72,6 +76,40 @@ const listarTodosPorTrabajo = async (req, res) => {
     }
 };
 
+const asignarExterno = async (req, res) => {
+    try {
+        const numeroPersonal = req.body?.Numero_Personal || req.headers['x-numero-personal'] || req.query?.Numero_Personal || null;
+        const nuevaAsignacion = await participanteService.asignarParticipanteExterno({
+            ...req.body,
+            Numero_Personal: numeroPersonal
+        });
+        res.status(201).json({ mensaje: 'Participante externo asignado correctamente al trabajo recepcional', nuevaAsignacion });
+    } catch (error) {
+        res.status(400).json({ error: 'Error al asignar participante externo', detalle: error.message });
+    }
+};
+
+const listarExternosPorTrabajo = async (req, res) => {
+    try {
+        const { idTrabajo } = req.params;
+        const lista = await participanteService.obtenerParticipantesExternosPorTrabajo(idTrabajo);
+        res.status(200).json(lista);
+    } catch (error) {
+        res.status(500).json({ error: 'Error al consultar participantes externos', detalle: error.message });
+    }
+};
+
+const eliminarExterno = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const numeroPersonal = req.body?.Numero_Personal || req.headers['x-numero-personal'] || req.query?.Numero_Personal || null;
+        const resultado = await participanteService.removerParticipanteExterno(id, numeroPersonal);
+        res.status(200).json(resultado);
+    } catch (error) {
+        res.status(400).json({ error: 'Error al desvincular participante externo', detalle: error.message });
+    }
+};
+
 module.exports = {
     asignarAcademico,
     listarAcademicosPorTrabajo,
@@ -79,8 +117,10 @@ module.exports = {
     asignarEstudiante,
     listarEstudiantesPorTrabajo,
     eliminarEstudiante,
+    asignarExterno,
+    listarExternosPorTrabajo,
+    eliminarExterno,
     listarTodosPorTrabajo,
-    // Aliases para compatibilidad previa
     asignar: asignarAcademico,
     listarPorTrabajo: listarAcademicosPorTrabajo,
     eliminar: eliminarAcademico

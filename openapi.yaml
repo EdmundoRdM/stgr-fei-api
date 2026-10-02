@@ -24,7 +24,15 @@ components:
           example: Desarrollo de API para SGTR-FEI
         Folio:
           type: string
-          example: FEI-TR-2026-001
+          example: Tomo 2 - Folio 98
+        Tomo:
+          type: integer
+          example: 2
+          description: Número de tomo/libro por carrera
+        Numero_Folio:
+          type: integer
+          example: 98
+          description: Número de folio del 1 al 100 dentro del tomo
         Modalidad:
           type: string
           example: Tesis
@@ -32,6 +40,12 @@ components:
           type: string
           format: date-time
           example: 2026-06-25T10:00:00.000Z
+          description: Fecha y hora de inicio de la defensa
+        Fecha_fin_defensa:
+          type: string
+          format: date-time
+          example: 2026-06-25T12:00:00.000Z
+          description: Fecha y hora de finalización de la defensa
         Resultado:
           type: string
           example: Aprobado por Unanimidad
@@ -67,6 +81,10 @@ components:
           type: string
           format: date-time
           example: 2026-07-15T09:30:00.000Z
+        Fecha_fin_defensa:
+          type: string
+          format: date-time
+          example: 2026-07-15T11:30:00.000Z
     ActualizarTrabajoDTO:
       type: object
       properties:
@@ -80,29 +98,76 @@ components:
           type: string
           format: date-time
           example: 2026-08-10T11:00:00.000Z
+        Fecha_fin_defensa:
+          type: string
+          format: date-time
+          example: 2026-08-10T13:00:00.000Z
         Id_Lugar:
           type: integer
           example: 1
         Id_Carrera:
           type: integer
           example: 1
+        Tomo:
+          type: integer
+          example: 2
+          description: Solo editable si el trabajo está en estado Finalizado
+        Numero_Folio:
+          type: integer
+          example: 98
+          description: Del 1 al 100. Solo editable si el trabajo está en estado Finalizado
         Folio:
           type: string
-          example: FEI-TR-2026-042
+          example: Tomo 2 - Folio 98
           description: Solo editable si el trabajo está en estado Finalizado
         Resultado:
           type: string
           example: Aprobado por Mayoría
           description: Solo editable si el trabajo está en estado Finalizado
+    ProgramarDefensaDTO:
+      type: object
+      properties:
+        Fecha:
+          type: string
+          format: date
+          example: 2026-07-15
+        Hora_inicio:
+          type: string
+          example: 10:00
+        Hora_fin:
+          type: string
+          example: 12:00
+        Fecha_defensa:
+          type: string
+          format: date-time
+          example: 2026-07-15T10:00:00.000Z
+        Fecha_fin_defensa:
+          type: string
+          format: date-time
+          example: 2026-07-15T12:00:00.000Z
+        Id_Lugar:
+          type: integer
+          example: 1
+          description: ID del salón o espacio físico
     FinalizarTrabajoDTO:
       type: object
       required:
-        - Folio
+        - Tomo
+        - Numero_Folio
         - Resultado
       properties:
+        Tomo:
+          type: integer
+          example: 2
+          description: Número de libro/tomo correspondiente a la carrera
+        Numero_Folio:
+          type: integer
+          example: 98
+          description: Número de folio del 1 al 100
         Folio:
           type: string
-          example: FEI-TR-2026-001
+          example: Tomo 2 - Folio 98
+          description: Opcional. Si no se envía se formatea automáticamente
         Resultado:
           type: string
           example: Aprobado por Unanimidad
@@ -239,6 +304,81 @@ components:
         Numero_Personal:
           type: string
           example: S001
+    ParticipanteExterno:
+      type: object
+      properties:
+        Id_ParticipanteExt:
+          type: integer
+          example: 1
+        Nombre:
+          type: string
+          example: Roberto
+        ApellidoP:
+          type: string
+          example: Martínez
+        ApellidoM:
+          type: string
+          example: Soto
+        CorreoElectronico:
+          type: string
+          example: roberto.martinez@empresa.com
+        Institucion:
+          type: string
+          example: Instituto Nacional de Investigaciones Eléctricas
+    CrearParticipanteExternoDTO:
+      type: object
+      required:
+        - Nombre
+        - ApellidoP
+      properties:
+        Nombre:
+          type: string
+          example: Roberto
+        ApellidoP:
+          type: string
+          example: Martínez
+        ApellidoM:
+          type: string
+          example: Soto
+        CorreoElectronico:
+          type: string
+          example: roberto.martinez@empresa.com
+        Institucion:
+          type: string
+          example: Instituto Nacional de Investigaciones Eléctricas
+    AsignarParticipanteExternoDTO:
+      type: object
+      required:
+        - Id_TrabajoR
+        - Id_ParticipanteExt
+        - Id_rol
+      properties:
+        Id_TrabajoR:
+          type: integer
+          example: 1
+        Id_ParticipanteExt:
+          type: integer
+          example: 1
+        Id_rol:
+          type: integer
+          example: 2
+          description: ID del rol institucional
+    EstadoTrabajoRecepcional:
+      type: object
+      properties:
+        Id_EstadoTrabajo:
+          type: integer
+          example: 1
+        Fecha:
+          type: string
+          format: date-time
+          example: 2026-06-25T10:00:00.000Z
+        Id_Estado:
+          type: integer
+          example: 2
+        Id_TrabajoR:
+          type: integer
+          example: 1
     ErrorRespuesta:
       type: object
       properties:
@@ -305,6 +445,157 @@ paths:
                   $ref: "#/components/schemas/TrabajoRecepcional"
         "500":
           description: Error al consultar los registros
+  /api/trabajos/siguiente-folio:
+    get:
+      summary: Sugerir el siguiente Tomo y Folio disponible para una carrera
+      description: Calcula de forma automática el siguiente folio (1 al 100) en el
+        tomo activo o sugiere el siguiente tomo si ya se completaron los 100
+        folios.
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: query
+          name: Id_Carrera
+          required: true
+          schema:
+            type: integer
+          description: Identificador de la carrera
+        - in: query
+          name: Tomo
+          schema:
+            type: integer
+          description: Opcional. Tomo específico a consultar para buscar el primer folio
+            libre.
+      responses:
+        "200":
+          description: Sugerencia de tomo y folio disponible
+        "400":
+          description: Parámetros inválidos
+  /api/trabajos/tomo-estado:
+    get:
+      summary: Consultar el estado y ocupación de folios de un tomo específico de una
+        carrera
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: query
+          name: Id_Carrera
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: Tomo
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de ocupación del tomo (folios ocupados, disponibles, total)
+  /api/trabajos/tomos:
+    get:
+      summary: Listar todos los tomos registrados de una carrera con sus totales
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: query
+          name: Id_Carrera
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de tomos de la carrera
+  /api/trabajos/agenda/disponibilidad:
+    get:
+      summary: Consultar disponibilidad de lugares y si la carrera está libre para un
+        horario
+      description: Valida la Regla 1 (espacios no ocupados) y la Regla 2 (no más de
+        una defensa simultánea de la misma carrera).
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: query
+          name: Fecha
+          required: false
+          schema:
+            type: string
+            format: date
+          example: 2026-07-15
+        - in: query
+          name: Hora_inicio
+          required: false
+          schema:
+            type: string
+          example: 10:00
+        - in: query
+          name: Hora_fin
+          required: false
+          schema:
+            type: string
+          example: 12:00
+        - in: query
+          name: Fecha_defensa
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: Fecha_fin_defensa
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: Id_Carrera
+          required: false
+          schema:
+            type: integer
+          description: Identificador de la carrera a consultar
+        - in: query
+          name: Id_TrabajoR
+          required: false
+          schema:
+            type: integer
+          description: ID del trabajo recepcional (para excluirlo al reprogramar)
+      responses:
+        "200":
+          description: Diagnóstico de disponibilidad (carrera libre, lista de lugares
+            disponibles y ocupados)
+        "400":
+          description: Horario o parámetros inválidos
+  /api/trabajos/agenda/defensas:
+    get:
+      summary: Consultar la agenda o calendario de defensas programadas
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: query
+          name: fecha
+          schema:
+            type: string
+            format: date
+          description: Consultar un día específico (YYYY-MM-DD)
+        - in: query
+          name: fechaInicio
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: fechaFin
+          schema:
+            type: string
+            format: date
+        - in: query
+          name: Id_Carrera
+          schema:
+            type: integer
+        - in: query
+          name: Id_Lugar
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de defensas programadas ordenadas cronológicamente
   "/api/trabajos/{id}":
     get:
       summary: Obtener el detalle completo de un trabajo recepcional por su ID
@@ -624,6 +915,73 @@ paths:
       responses:
         "200":
           description: Entregas procesadas exitosamente
+  "/api/trabajos/{id}/historial-estados":
+    get:
+      summary: Obtener el historial cronológico de cambios de estado del trabajo
+        recepcional
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      responses:
+        "200":
+          description: Historial de transiciones de estado con fechas
+        "404":
+          description: Trabajo no encontrado
+  "/api/trabajos/{id}/programar-defensa":
+    post:
+      summary: Programar o reprogramar el horario y lugar de la defensa recepcional
+      description: "Aplica las reglas institucionales de validación de conflictos
+        (Regla 1: espacio físico ocupado, Regla 2: no defensas simultáneas de la
+        misma carrera)."
+      tags:
+        - Trabajos Recepcionales
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID del trabajo recepcional
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                Fecha:
+                  type: string
+                  format: date
+                  example: 2026-07-15
+                Hora_inicio:
+                  type: string
+                  example: 10:00
+                Hora_fin:
+                  type: string
+                  example: 12:00
+                Fecha_defensa:
+                  type: string
+                  format: date-time
+                  example: 2026-07-15T10:00:00.000Z
+                Fecha_fin_defensa:
+                  type: string
+                  format: date-time
+                  example: 2026-07-15T12:00:00.000Z
+                Id_Lugar:
+                  type: integer
+                  example: 1
+                  description: ID del salón o aula del catálogo Lugar
+      responses:
+        "200":
+          description: Horario y lugar programados exitosamente
+        "400":
+          description: Conflicto de horario o espacio físico detectado
   /api/secretarias:
     post:
       summary: Registrar una nueva secretaria de grupo
@@ -867,6 +1225,216 @@ paths:
           description: Estudiante desvinculado exitosamente
         "400":
           description: Asignación no encontrada
+  /api/participantes/externo:
+    post:
+      summary: Asignar un participante externo a un trabajo recepcional
+      tags:
+        - Participantes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_TrabajoR
+                - Id_ParticipanteExt
+                - Id_rol
+              properties:
+                Id_TrabajoR:
+                  type: integer
+                Id_ParticipanteExt:
+                  type: integer
+                Id_rol:
+                  type: integer
+      responses:
+        "201":
+          description: Participante externo asignado correctamente
+  "/api/participantes/externo/trabajo/{idTrabajo}":
+    get:
+      summary: Listar los participantes externos de un trabajo recepcional
+      tags:
+        - Participantes
+      parameters:
+        - in: path
+          name: idTrabajo
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de participantes externos asignados
+  "/api/participantes/externo/{id}":
+    delete:
+      summary: Desvincular un participante externo de un trabajo recepcional
+      tags:
+        - Participantes
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Participante externo removido exitosamente
+  /api/participantes-externos:
+    post:
+      summary: Registrar un nuevo participante externo
+      tags:
+        - Participantes Externos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Nombre
+                - ApellidoP
+              properties:
+                Nombre:
+                  type: string
+                  example: Roberto
+                ApellidoP:
+                  type: string
+                  example: Martínez
+                ApellidoM:
+                  type: string
+                  example: Soto
+                CorreoElectronico:
+                  type: string
+                  example: roberto.martinez@empresa.com
+                Institucion:
+                  type: string
+                  example: Instituto Nacional de Investigaciones Eléctricas
+      responses:
+        "201":
+          description: Participante externo registrado exitosamente
+        "400":
+          description: Error en los datos proporcionados
+    get:
+      summary: Listar participantes externos con filtros opcionales
+      tags:
+        - Participantes Externos
+      parameters:
+        - in: query
+          name: Institucion
+          schema:
+            type: string
+          description: Filtrar por institución de procedencia
+        - in: query
+          name: busqueda
+          schema:
+            type: string
+          description: Búsqueda general por nombre, apellido, correo o institución
+      responses:
+        "200":
+          description: Lista de participantes externos
+  "/api/participantes-externos/{id}":
+    get:
+      summary: Obtener el detalle de un participante externo por ID
+      tags:
+        - Participantes Externos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle del participante externo y trabajos vinculados
+        "404":
+          description: No encontrado
+    put:
+      summary: Actualizar la información de un participante externo
+      tags:
+        - Participantes Externos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Participante externo actualizado correctamente
+        "400":
+          description: Error al actualizar
+    delete:
+      summary: Eliminar un participante externo
+      tags:
+        - Participantes Externos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Eliminado exitosamente
+        "400":
+          description: No se puede eliminar si tiene trabajos vinculados
+  /api/participantes-externos/asignar:
+    post:
+      summary: Asignar un participante externo a un trabajo recepcional con un rol
+      tags:
+        - Participantes Externos
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Id_TrabajoR
+                - Id_ParticipanteExt
+                - Id_rol
+              properties:
+                Id_TrabajoR:
+                  type: integer
+                  example: 1
+                Id_ParticipanteExt:
+                  type: integer
+                  example: 1
+                Id_rol:
+                  type: integer
+                  example: 2
+                  description: ID del rol (Director, Codirector, Sinodal, etc.)
+      responses:
+        "201":
+          description: Participante externo asignado correctamente
+  "/api/participantes-externos/trabajo/{idTrabajo}":
+    get:
+      summary: Listar los participantes externos asignados a un trabajo recepcional
+      tags:
+        - Participantes Externos
+      parameters:
+        - in: path
+          name: idTrabajo
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de participantes externos asignados
+  "/api/participantes-externos/asignacion/{id}":
+    delete:
+      summary: Desvincular a un participante externo de un trabajo recepcional
+      tags:
+        - Participantes Externos
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID de la asignación (Id_ParticipanteExtTrabajo)
+      responses:
+        "200":
+          description: Participante externo desvinculado con éxito
   /api/estudiantes:
     post:
       summary: Registrar un nuevo estudiante
@@ -1048,6 +1616,197 @@ paths:
           description: Entregas procesadas exitosamente
         "400":
           description: Error al procesar lote
+  /api/cursos/periodo-actual:
+    get:
+      summary: Obtener el periodo escolar actual
+      tags:
+        - Cursos ER
+      responses:
+        "200":
+          description: Periodo escolar vigente
+  /api/cursos/periodos:
+    get:
+      summary: Listar todos los periodos escolares registrados
+      tags:
+        - Cursos ER
+      responses:
+        "200":
+          description: Lista de periodos escolares
+  /api/cursos/mis-grupos:
+    get:
+      summary: Obtener los grupos de ER asignados a un profesor con sus alumnos
+        inscritos
+      tags:
+        - Cursos ER
+      parameters:
+        - in: header
+          name: x-numero-personal
+          schema:
+            type: string
+          description: Número de personal del profesor
+        - in: query
+          name: soloActual
+          schema:
+            type: boolean
+          description: Si es true, solo retorna los grupos del periodo escolar vigente
+      responses:
+        "200":
+          description: Grupos asignados al profesor
+  /api/cursos:
+    post:
+      summary: Crear un nuevo curso/NRC de Experiencia Recepcional
+      tags:
+        - Cursos ER
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - NRC
+              properties:
+                NRC:
+                  type: string
+                  example: "12345"
+                Nombre:
+                  type: string
+                  example: Experiencia Recepcional
+      responses:
+        "201":
+          description: Curso creado con éxito
+    get:
+      summary: Listar todos los cursos de Experiencia Recepcional
+      tags:
+        - Cursos ER
+      responses:
+        "200":
+          description: Lista de cursos
+  /api/cursos/asignar-profesor:
+    post:
+      summary: Asignar un profesor como titular de un curso/NRC en un periodo escolar
+      tags:
+        - Cursos ER
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Numero_Personal
+              properties:
+                NRC:
+                  type: string
+                  example: "12345"
+                Id_Curso:
+                  type: integer
+                  example: 1
+                Numero_Personal:
+                  type: string
+                  example: "123456"
+                Id_Periodo:
+                  type: integer
+                  example: 1
+                  description: Opcional. Si no se envía, se utiliza el periodo escolar actual.
+      responses:
+        "201":
+          description: Profesor asignado al curso
+  /api/cursos/inscribir-estudiante:
+    post:
+      summary: Inscribir a un estudiante en un curso/NRC para un periodo escolar
+      tags:
+        - Cursos ER
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Matricula
+              properties:
+                NRC:
+                  type: string
+                  example: "12345"
+                Id_Curso:
+                  type: integer
+                  example: 1
+                Matricula:
+                  type: string
+                  example: s20014589
+                Id_Periodo:
+                  type: integer
+                  example: 1
+                  description: Opcional. Si no se envía, se utiliza el periodo escolar actual.
+      responses:
+        "201":
+          description: Estudiante inscrito al curso
+  /api/cursos/inscribir-lote:
+    post:
+      summary: Inscribir un lote de estudiantes a un curso/NRC
+      tags:
+        - Cursos ER
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - Matriculas
+              properties:
+                NRC:
+                  type: string
+                  example: "12345"
+                Id_Curso:
+                  type: integer
+                  example: 1
+                Matriculas:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - s20014589
+                    - s20014590
+                Id_Periodo:
+                  type: integer
+                  example: 1
+      responses:
+        "200":
+          description: Resultados de inscripción por lote
+  "/api/cursos/{id}":
+    get:
+      summary: Obtener el detalle de un curso con profesores y estudiantes asignados
+      tags:
+        - Cursos ER
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle del curso
+  "/api/cursos/{id}/estudiantes":
+    get:
+      summary: Obtener la lista de estudiantes inscritos en un curso específico
+      tags:
+        - Cursos ER
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: Id_Periodo
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de estudiantes inscritos
   /api/bitacora:
     get:
       summary: Consultar el historial de acciones en la bitácora
@@ -1207,11 +1966,17 @@ tags:
   - name: Participantes
     description: Gestión unificada de participantes asignados a trabajos
       recepcionales (académicos y estudiantes)
+  - name: Participantes Externos
+    description: Catálogo y gestión de directores, codirectores o sinodales externos
+      a la Universidad Veracruzana
   - name: Estudiantes
     description: Catálogo y gestión de estudiantes de las licenciaturas de la FEI
   - name: Documentos
     description: Catálogo institucional de documentos y control de entrega por
       estudiante y trabajo recepcional
+  - name: Cursos ER
+    description: Gestión de Cursos de Experiencia Recepcional (NRC), grupos y
+      asignaciones de profesores y alumnos
   - name: Bitácora
     description: Registro y consulta de auditoría de acciones realizadas en el sistema
   - name: Autenticación

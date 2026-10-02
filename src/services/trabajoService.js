@@ -8,8 +8,13 @@ const ParticipantesTrabajo = require('../models/ParticipantesTrabajo');
 const Academico = require('../models/Academico');
 const RolDeParticipacion = require('../models/Rol_de_participacion');
 const EstudianteDocumento = require('../models/EstudianteDocumento');
+const ParticipantesExternosTrabajo = require('../models/ParticipantesExternosTrabajo');
+const ParticipanteExterno = require('../models/ParticipanteExterno');
+const EstadoTrabajoRecepcional = require('../models/EstadoTrabajoRecepcional');
 const bitacoraService = require('./bitacoraService');
 const documentoService = require('./documentoService');
+const estadoTrabajoService = require('./estadoTrabajoService');
+const defensaService = require('./defensaService');
 
 const validarFechaDefensa = (fecha) => {
     if (fecha !== undefined && fecha !== null && fecha !== '') {
@@ -21,17 +26,33 @@ const validarFechaDefensa = (fecha) => {
 };
 
 const crearTrabajoBorrador = async (datosNuevoTrabajo) => {
-    validarFechaDefensa(datosNuevoTrabajo.Fecha_defensa);
+    let horarioNormalizado = null;
+    if (datosNuevoTrabajo.Fecha_defensa || (datosNuevoTrabajo.Fecha && datosNuevoTrabajo.Hora_inicio)) {
+        horarioNormalizado = defensaService.normalizarHorariosDefensa(datosNuevoTrabajo);
+        await defensaService.validarConflictoHorarioYEspacio({
+            Id_TrabajoR: null,
+            Id_Lugar: datosNuevoTrabajo.Id_Lugar || null,
+            Id_Carrera: datosNuevoTrabajo.Id_Carrera,
+            inicio: horarioNormalizado.inicio,
+            fin: horarioNormalizado.fin
+        });
+    }
+
     const estadoBorrador = await EstadoLista.findOne({ where: { EstadoNombre: 'Borrador' } });
     
     const nuevoTrabajoRecepcional = {
         ...datosNuevoTrabajo,
+        Fecha_defensa: horarioNormalizado ? horarioNormalizado.inicio : (datosNuevoTrabajo.Fecha_defensa || null),
+        Fecha_fin_defensa: horarioNormalizado ? horarioNormalizado.fin : (datosNuevoTrabajo.Fecha_fin_defensa || null),
         Id_Estado: estadoBorrador ? estadoBorrador.Id_Estado : 1,
         Folio: 'Pendiente',
         Resultado: 'Pendiente'
     };
 
-    return await TrabajoRecepcional.create(nuevoTrabajoRecepcional);
+    const trabajoCreado = await TrabajoRecepcional.create(nuevoTrabajoRecepcional);
+    await estadoTrabajoService.registrarCambioEstado(trabajoCreado.Id_TrabajoR, trabajoCreado.Id_Estado);
+
+    return trabajoCreado;
 };
 
 const obtenerTrabajos = async (filtrosBusqueda = {}) => {
@@ -78,6 +99,28 @@ const obtenerTrabajoPorId = async (idTrabajoRecepcional) => {
                         attributes: ['Id_rol', 'NombreRol']
                     }
                 ]
+            },
+            {
+                model: ParticipantesExternosTrabajo,
+                include: [
+                    {
+                        model: ParticipanteExterno,
+                        attributes: ['Id_ParticipanteExt', 'Nombre', 'ApellidoP', 'ApellidoM', 'CorreoElectronico', 'Institucion']
+                    },
+                    {
+                        model: RolDeParticipacion,
+                        attributes: ['Id_rol', 'NombreRol']
+                    }
+                ]
+            },
+            {
+                model: EstadoTrabajoRecepcional,
+                include: [
+                    {
+                        model: EstadoLista,
+                        attributes: ['Id_Estado', 'EstadoNombre']
+                    }
+                ]
             }
         ]
     });
@@ -101,11 +144,38 @@ const actualizarTrabajo = async (idTrabajoRecepcional, datosActualizacion, Numer
         }
     }
 
-    if (datosActualizacion.Fecha_defensa !== undefined) {
-        validarFechaDefensa(datosActualizacion.Fecha_defensa);
+    if (datosActualizacion.Fecha_defensa !== undefined || datosActualizacion.Fecha_fin_defensa !== undefined || datosActualizacion.Id_Lugar !== undefined || (datosActualizacion.Fecha && datosActualizacion.Hora_inicio)) {
+        const idLugar = datosActualizacion.Id_Lugar !== undefined ? datosActualizacion.Id_Lugar : trabajoRecepcional.Id_Lugar;
+        const idCarrera = datosActualizacion.Id_Carrera !== undefined ? datosActualizacion.Id_Carrera : trabajoRecepcional.Id_Carrera;
+
+        let horarioNormalizado = null;
+        if (datosActualizacion.Fecha && datosActualizacion.Hora_inicio) {
+            horarioNormalizado = defensaService.normalizarHorariosDefensa(datosActualizacion);
+        } else if (datosActualizacion.Fecha_defensa || datosActualizacion.Fecha_fin_defensa) {
+            const fechaIni = datosActualizacion.Fecha_defensa !== undefined ? datosActualizacion.Fecha_defensa : trabajoRecepcional.Fecha_defensa;
+            const fechaFin = datosActualizacion.Fecha_fin_defensa !== undefined ? datosActualizacion.Fecha_fin_defensa : trabajoRecepcional.Fecha_fin_defensa;
+            if (fechaIni) {
+                horarioNormalizado = defensaService.normalizarHorariosDefensa({
+                    Fecha_defensa: fechaIni,
+                    Fecha_fin_defensa: fechaFin
+                });
+            }
+        }
+
+        if (horarioNormalizado) {
+            await defensaService.validarConflictoHorarioYEspacio({
+                Id_TrabajoR: idTrabajoRecepcional,
+                Id_Lugar: idLugar,
+                Id_Carrera: idCarrera,
+                inicio: horarioNormalizado.inicio,
+                fin: horarioNormalizado.fin
+            });
+            trabajoRecepcional.Fecha_defensa = horarioNormalizado.inicio;
+            trabajoRecepcional.Fecha_fin_defensa = horarioNormalizado.fin;
+        }
     }
 
-    const camposPermitidosActualizacion = ['Titulo', 'Modalidad', 'Fecha_defensa', 'Id_Lugar', 'Id_Carrera'];
+    const camposPermitidosActualizacion = ['Titulo', 'Modalidad', 'Fecha_defensa', 'Fecha_fin_defensa', 'Id_Lugar', 'Id_Carrera'];
     if (estadoNombreActual === 'Finalizado') {
         camposPermitidosActualizacion.push('Folio', 'Resultado');
     }
@@ -142,6 +212,8 @@ const enviarAValidacion = async (idTrabajoRecepcional) => {
 
     trabajoRecepcional.Id_Estado = estadoRegistrado.Id_Estado;
     await trabajoRecepcional.save();
+    await estadoTrabajoService.registrarCambioEstado(idTrabajoRecepcional, estadoRegistrado.Id_Estado);
+
     return await obtenerTrabajoPorId(idTrabajoRecepcional);
 };
 
@@ -159,6 +231,7 @@ const validarTrabajo = async (idTrabajoRecepcional, Numero_Personal) => {
 
     trabajoRecepcional.Id_Estado = estadoAprobado.Id_Estado;
     await trabajoRecepcional.save();
+    await estadoTrabajoService.registrarCambioEstado(idTrabajoRecepcional, estadoAprobado.Id_Estado);
 
     await bitacoraService.registrarAccion({
         Nombreaccion: 'Validación de trabajo recepcional',
@@ -184,6 +257,7 @@ const rechazarTrabajo = async (idTrabajoRecepcional, motivoRechazo, Numero_Perso
 
     trabajoRecepcional.Id_Estado = estadoBorrador.Id_Estado;
     await trabajoRecepcional.save();
+    await estadoTrabajoService.registrarCambioEstado(idTrabajoRecepcional, estadoBorrador.Id_Estado);
 
     await bitacoraService.registrarAccion({
         Nombreaccion: 'Rechazo de trabajo recepcional',
@@ -200,7 +274,10 @@ const rechazarTrabajo = async (idTrabajoRecepcional, motivoRechazo, Numero_Perso
 };
 
 // CU-06: Generar acta tras completar checklist de documentos
-const generarActa = async (idTrabajoRecepcional, Numero_Personal) => {
+const generarActa = async (idTrabajoRecepcional, opciones = {}) => {
+    const { Tomo, Numero_Folio, Folio, Numero_Personal } =
+        typeof opciones === 'object' && opciones !== null ? opciones : { Numero_Personal: opciones };
+
     const trabajoRecepcional = await TrabajoRecepcional.findByPk(idTrabajoRecepcional);
     if (!trabajoRecepcional) throw new Error('Trabajo recepcional no encontrado');
 
@@ -217,23 +294,36 @@ const generarActa = async (idTrabajoRecepcional, Numero_Personal) => {
     const estadoGenerado = await EstadoLista.findOne({ where: { EstadoNombre: 'Generado' } });
     if (!estadoGenerado) throw new Error("Estado 'Generado' no encontrado en el catálogo");
 
+    // Asignación de Tomo, Folio numérico y Folio formateado al generar el acta
+    if (Tomo !== undefined && Tomo !== null && Tomo !== '') {
+        const pT = parseInt(Tomo, 10);
+        trabajoRecepcional.Tomo = !isNaN(pT) ? pT : null;
+    }
+    if (Numero_Folio !== undefined && Numero_Folio !== null && Numero_Folio !== '') {
+        const pF = parseInt(Numero_Folio, 10);
+        trabajoRecepcional.Numero_Folio = !isNaN(pF) ? pF : null;
+    }
+    if (Folio && Folio.trim() !== '') {
+        trabajoRecepcional.Folio = Folio;
+    } else if (Tomo || Numero_Folio) {
+        trabajoRecepcional.Folio = `Tomo ${Tomo || 1} - Folio ${Numero_Folio || 1}`;
+    }
+
     trabajoRecepcional.Id_Estado = estadoGenerado.Id_Estado;
     await trabajoRecepcional.save();
+    await estadoTrabajoService.registrarCambioEstado(idTrabajoRecepcional, estadoGenerado.Id_Estado);
 
     await bitacoraService.registrarAccion({
         Nombreaccion: 'Generación de acta de trabajo recepcional',
         Numero_Personal: Numero_Personal || null,
         Id_TrabajoR: idTrabajoRecepcional,
-        Detalles: `Se generó el acta oficial tras recibir el 100% de los documentos requeridos para el trabajo "${trabajoRecepcional.Titulo}".`
+        Detalles: `Se generó el acta oficial tras recibir el 100% de los documentos requeridos para el trabajo "${trabajoRecepcional.Titulo}". Folio: ${trabajoRecepcional.Folio || 'N/A'}`
     });
 
     return await obtenerTrabajoPorId(idTrabajoRecepcional);
 };
 
-const finalizarTrabajo = async (idTrabajoRecepcional, { Folio, Resultado, Numero_Personal }) => {
-    if (!Folio || Folio.trim() === '' || Folio === 'Pendiente') {
-        throw new Error('Se requiere un Folio válido para finalizar el trabajo recepcional');
-    }
+const finalizarTrabajo = async (idTrabajoRecepcional, { Tomo, Numero_Folio, Folio, Resultado, Numero_Personal } = {}) => {
     if (!Resultado || Resultado.trim() === '' || Resultado === 'Pendiente') {
         throw new Error('Se requiere registrar el Resultado de la defensa para finalizar el trabajo recepcional');
     }
@@ -250,16 +340,31 @@ const finalizarTrabajo = async (idTrabajoRecepcional, { Folio, Resultado, Numero
     const estadoFinalizado = await EstadoLista.findOne({ where: { EstadoNombre: 'Finalizado' } });
     if (!estadoFinalizado) throw new Error("Estado 'Finalizado' no encontrado en el catálogo");
 
-    trabajoRecepcional.Folio = Folio;
+    // Tomo y Folio se recuperan de la base de datos (ya asignados al generar acta) o del payload
+    if (Tomo !== undefined && Tomo !== null && Tomo !== '') {
+        const pT = parseInt(Tomo, 10);
+        trabajoRecepcional.Tomo = !isNaN(pT) ? pT : trabajoRecepcional.Tomo;
+    }
+    if (Numero_Folio !== undefined && Numero_Folio !== null && Numero_Folio !== '') {
+        const pF = parseInt(Numero_Folio, 10);
+        trabajoRecepcional.Numero_Folio = !isNaN(pF) ? pF : trabajoRecepcional.Numero_Folio;
+    }
+    if (Folio && Folio.trim() !== '' && Folio !== 'Pendiente') {
+        trabajoRecepcional.Folio = Folio;
+    } else if (!trabajoRecepcional.Folio || trabajoRecepcional.Folio === 'Pendiente') {
+        trabajoRecepcional.Folio = `Tomo ${trabajoRecepcional.Tomo || 1} - Folio ${trabajoRecepcional.Numero_Folio || 1}`;
+    }
+
     trabajoRecepcional.Resultado = Resultado;
     trabajoRecepcional.Id_Estado = estadoFinalizado.Id_Estado;
     await trabajoRecepcional.save();
+    await estadoTrabajoService.registrarCambioEstado(idTrabajoRecepcional, estadoFinalizado.Id_Estado);
 
     await bitacoraService.registrarAccion({
         Nombreaccion: 'Finalización de trabajo recepcional',
         Numero_Personal: Numero_Personal || null,
         Id_TrabajoR: idTrabajoRecepcional,
-        Detalles: `Trabajo finalizado con Folio: ${Folio}, Resultado: ${Resultado}`
+        Detalles: `Trabajo finalizado con Tomo: ${trabajoRecepcional.Tomo || 'N/A'}, Folio: ${trabajoRecepcional.Numero_Folio || trabajoRecepcional.Folio}, Resultado: ${Resultado}`
     });
 
     return await obtenerTrabajoPorId(idTrabajoRecepcional);
@@ -274,6 +379,8 @@ const actualizarEstadoTrabajo = async (idTrabajoRecepcional, nombreEstadoDestino
 
     trabajoRecepcional.Id_Estado = estadoDestino.Id_Estado;
     await trabajoRecepcional.save();
+    await estadoTrabajoService.registrarCambioEstado(idTrabajoRecepcional, estadoDestino.Id_Estado);
+
     return await obtenerTrabajoPorId(idTrabajoRecepcional);
 };
 
@@ -283,6 +390,8 @@ const eliminarTrabajo = async (idTrabajoRecepcional, Numero_Personal) => {
 
     const titulo = trabajoRecepcional.Titulo;
 
+    await EstadoTrabajoRecepcional.destroy({ where: { Id_TrabajoR: idTrabajoRecepcional } });
+    await ParticipantesExternosTrabajo.destroy({ where: { Id_TrabajoR: idTrabajoRecepcional } });
     await EstudianteDocumento.destroy({ where: { Id_TrabajoR: idTrabajoRecepcional } });
     await ParticipantesTrabajo.destroy({ where: { Id_TrabajoR: idTrabajoRecepcional } });
     await EstudianteTrabajo.destroy({ where: { Id_TrabajoR: idTrabajoRecepcional } });

@@ -75,6 +75,170 @@ router.get('/', trabajoController.listar);
 
 /**
  * @swagger
+ * /api/trabajos/siguiente-folio:
+ *   get:
+ *     summary: Sugerir el siguiente Tomo y Folio disponible para una carrera
+ *     description: Calcula de forma automática el siguiente folio (1 al 100) en el tomo activo o sugiere el siguiente tomo si ya se completaron los 100 folios.
+ *     tags: [Trabajos Recepcionales]
+ *     parameters:
+ *       - in: query
+ *         name: Id_Carrera
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Identificador de la carrera
+ *       - in: query
+ *         name: Tomo
+ *         schema:
+ *           type: integer
+ *         description: Opcional. Tomo específico a consultar para buscar el primer folio libre.
+ *     responses:
+ *       200:
+ *         description: Sugerencia de tomo y folio disponible
+ *       400:
+ *         description: Parámetros inválidos
+ */
+router.get('/siguiente-folio', trabajoController.sugerirFolio);
+
+/**
+ * @swagger
+ * /api/trabajos/tomo-estado:
+ *   get:
+ *     summary: Consultar el estado y ocupación de folios de un tomo específico de una carrera
+ *     tags: [Trabajos Recepcionales]
+ *     parameters:
+ *       - in: query
+ *         name: Id_Carrera
+ *         required: true
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: Tomo
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Detalle de ocupación del tomo (folios ocupados, disponibles, total)
+ */
+router.get('/tomo-estado', trabajoController.consultarEstadoTomo);
+
+/**
+ * @swagger
+ * /api/trabajos/tomos:
+ *   get:
+ *     summary: Listar todos los tomos registrados de una carrera con sus totales
+ *     tags: [Trabajos Recepcionales]
+ *     parameters:
+ *       - in: query
+ *         name: Id_Carrera
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lista de tomos de la carrera
+ */
+router.get('/tomos', trabajoController.listarTomos);
+
+/**
+ * @swagger
+ * /api/trabajos/agenda/disponibilidad:
+ *   get:
+ *     summary: Consultar disponibilidad de lugares y si la carrera está libre para un horario
+ *     description: 'Valida la Regla 1 (espacios no ocupados) y la Regla 2 (no más de una defensa simultánea de la misma carrera).'
+ *     tags: [Trabajos Recepcionales]
+ *     parameters:
+ *       - in: query
+ *         name: Fecha
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: '2026-07-15'
+ *       - in: query
+ *         name: Hora_inicio
+ *         required: false
+ *         schema:
+ *           type: string
+ *         example: '10:00'
+ *       - in: query
+ *         name: Hora_fin
+ *         required: false
+ *         schema:
+ *           type: string
+ *         example: '12:00'
+ *       - in: query
+ *         name: Fecha_defensa
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: Fecha_fin_defensa
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - in: query
+ *         name: Id_Carrera
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         description: Identificador de la carrera a consultar
+ *       - in: query
+ *         name: Id_TrabajoR
+ *         required: false
+ *         schema:
+ *           type: integer
+ *         description: ID del trabajo recepcional (para excluirlo al reprogramar)
+ *     responses:
+ *       200:
+ *         description: Diagnóstico de disponibilidad (carrera libre, lista de lugares disponibles y ocupados)
+ *       400:
+ *         description: Horario o parámetros inválidos
+ */
+router.get('/agenda/disponibilidad', trabajoController.consultarDisponibilidadAgenda);
+
+/**
+ * @swagger
+ * /api/trabajos/agenda/defensas:
+ *   get:
+ *     summary: Consultar la agenda o calendario de defensas programadas
+ *     tags: [Trabajos Recepcionales]
+ *     parameters:
+ *       - in: query
+ *         name: fecha
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Consultar un día específico (YYYY-MM-DD)
+ *       - in: query
+ *         name: fechaInicio
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: fechaFin
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: Id_Carrera
+ *         schema:
+ *           type: integer
+ *       - in: query
+ *         name: Id_Lugar
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lista de defensas programadas ordenadas cronológicamente
+ */
+router.get('/agenda/defensas', trabajoController.consultarAgendaDefensas);
+
+/**
+ * @swagger
  * /api/trabajos/{id}:
  *   get:
  *     summary: Obtener el detalle completo de un trabajo recepcional por su ID
@@ -430,6 +594,78 @@ router.delete('/:id/documentos', documentoController.eliminarEntrega);
  *         description: Entregas procesadas exitosamente
  */
 router.post('/:id/documentos/lote', documentoController.registrarLote);
+
+/**
+ * @swagger
+ * /api/trabajos/{id}/historial-estados:
+ *   get:
+ *     summary: Obtener el historial cronológico de cambios de estado del trabajo recepcional
+ *     tags: [Trabajos Recepcionales]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del trabajo recepcional
+ *     responses:
+ *       200:
+ *         description: Historial de transiciones de estado con fechas
+ *       404:
+ *         description: Trabajo no encontrado
+ */
+router.get('/:id/historial-estados', trabajoController.obtenerHistorialEstados);
+
+/**
+ * @swagger
+ * /api/trabajos/{id}/programar-defensa:
+ *   post:
+ *     summary: Programar o reprogramar el horario y lugar de la defensa recepcional
+ *     description: 'Aplica las reglas institucionales de validación de conflictos (Regla 1: espacio físico ocupado, Regla 2: no defensas simultáneas de la misma carrera).'
+ *     tags: [Trabajos Recepcionales]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID del trabajo recepcional
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               Fecha:
+ *                 type: string
+ *                 format: date
+ *                 example: '2026-07-15'
+ *               Hora_inicio:
+ *                 type: string
+ *                 example: '10:00'
+ *               Hora_fin:
+ *                 type: string
+ *                 example: '12:00'
+ *               Fecha_defensa:
+ *                 type: string
+ *                 format: date-time
+ *                 example: '2026-07-15T10:00:00.000Z'
+ *               Fecha_fin_defensa:
+ *                 type: string
+ *                 format: date-time
+ *                 example: '2026-07-15T12:00:00.000Z'
+ *               Id_Lugar:
+ *                 type: integer
+ *                 example: 1
+ *                 description: ID del salón o aula del catálogo Lugar
+ *     responses:
+ *       200:
+ *         description: Horario y lugar programados exitosamente
+ *       400:
+ *         description: Conflicto de horario o espacio físico detectado
+ */
+router.post('/:id/programar-defensa', trabajoController.programarDefensa);
 
 router.delete('/:id', trabajoController.eliminar);
 

@@ -25,9 +25,12 @@ const swaggerDefinition = {
                 properties: {
                     Id_TrabajoR: { type: 'integer', example: 1 },
                     Titulo: { type: 'string', example: 'Desarrollo de API para SGTR-FEI' },
-                    Folio: { type: 'string', example: 'FEI-TR-2026-001' },
+                    Folio: { type: 'string', example: 'Tomo 2 - Folio 98' },
+                    Tomo: { type: 'integer', example: 2, description: 'Número de tomo/libro por carrera' },
+                    Numero_Folio: { type: 'integer', example: 98, description: 'Número de folio del 1 al 100 dentro del tomo' },
                     Modalidad: { type: 'string', example: 'Tesis' },
-                    Fecha_defensa: { type: 'string', format: 'date-time', example: '2026-06-25T10:00:00.000Z' },
+                    Fecha_defensa: { type: 'string', format: 'date-time', example: '2026-06-25T10:00:00.000Z', description: 'Fecha y hora de inicio de la defensa' },
+                    Fecha_fin_defensa: { type: 'string', format: 'date-time', example: '2026-06-25T12:00:00.000Z', description: 'Fecha y hora de finalización de la defensa' },
                     Resultado: { type: 'string', example: 'Aprobado por Unanimidad' },
                     Id_Carrera: { type: 'integer', example: 1 },
                     Id_Lugar: { type: 'integer', example: 1 },
@@ -42,7 +45,8 @@ const swaggerDefinition = {
                     Modalidad: { type: 'string', example: 'Monografía' },
                     Id_Carrera: { type: 'integer', example: 1 },
                     Id_Lugar: { type: 'integer', example: 2 },
-                    Fecha_defensa: { type: 'string', format: 'date-time', example: '2026-07-15T09:30:00.000Z' }
+                    Fecha_defensa: { type: 'string', format: 'date-time', example: '2026-07-15T09:30:00.000Z' },
+                    Fecha_fin_defensa: { type: 'string', format: 'date-time', example: '2026-07-15T11:30:00.000Z' }
                 }
             },
             ActualizarTrabajoDTO: {
@@ -51,17 +55,33 @@ const swaggerDefinition = {
                     Titulo: { type: 'string', example: 'Título actualizado del trabajo' },
                     Modalidad: { type: 'string', example: 'Tesina' },
                     Fecha_defensa: { type: 'string', format: 'date-time', example: '2026-08-10T11:00:00.000Z' },
+                    Fecha_fin_defensa: { type: 'string', format: 'date-time', example: '2026-08-10T13:00:00.000Z' },
                     Id_Lugar: { type: 'integer', example: 1 },
                     Id_Carrera: { type: 'integer', example: 1 },
-                    Folio: { type: 'string', example: 'FEI-TR-2026-042', description: 'Solo editable si el trabajo está en estado Finalizado' },
+                    Tomo: { type: 'integer', example: 2, description: 'Solo editable si el trabajo está en estado Finalizado' },
+                    Numero_Folio: { type: 'integer', example: 98, description: 'Del 1 al 100. Solo editable si el trabajo está en estado Finalizado' },
+                    Folio: { type: 'string', example: 'Tomo 2 - Folio 98', description: 'Solo editable si el trabajo está en estado Finalizado' },
                     Resultado: { type: 'string', example: 'Aprobado por Mayoría', description: 'Solo editable si el trabajo está en estado Finalizado' }
+                }
+            },
+            ProgramarDefensaDTO: {
+                type: 'object',
+                properties: {
+                    Fecha: { type: 'string', format: 'date', example: '2026-07-15' },
+                    Hora_inicio: { type: 'string', example: '10:00' },
+                    Hora_fin: { type: 'string', example: '12:00' },
+                    Fecha_defensa: { type: 'string', format: 'date-time', example: '2026-07-15T10:00:00.000Z' },
+                    Fecha_fin_defensa: { type: 'string', format: 'date-time', example: '2026-07-15T12:00:00.000Z' },
+                    Id_Lugar: { type: 'integer', example: 1, description: 'ID del salón o espacio físico' }
                 }
             },
             FinalizarTrabajoDTO: {
                 type: 'object',
-                required: ['Folio', 'Resultado'],
+                required: ['Tomo', 'Numero_Folio', 'Resultado'],
                 properties: {
-                    Folio: { type: 'string', example: 'FEI-TR-2026-001' },
+                    Tomo: { type: 'integer', example: 2, description: 'Número de libro/tomo correspondiente a la carrera' },
+                    Numero_Folio: { type: 'integer', example: 98, description: 'Número de folio del 1 al 100' },
+                    Folio: { type: 'string', example: 'Tomo 2 - Folio 98', description: 'Opcional. Si no se envía se formatea automáticamente' },
                     Resultado: { type: 'string', example: 'Aprobado por Unanimidad' }
                 }
             },
@@ -133,6 +153,46 @@ const swaggerDefinition = {
                     Id_Documento: { type: 'integer', example: 1 },
                     Entregado: { type: 'boolean', example: true },
                     Numero_Personal: { type: 'string', example: 'S001' }
+                }
+            },
+            ParticipanteExterno: {
+                type: 'object',
+                properties: {
+                    Id_ParticipanteExt: { type: 'integer', example: 1 },
+                    Nombre: { type: 'string', example: 'Roberto' },
+                    ApellidoP: { type: 'string', example: 'Martínez' },
+                    ApellidoM: { type: 'string', example: 'Soto' },
+                    CorreoElectronico: { type: 'string', example: 'roberto.martinez@empresa.com' },
+                    Institucion: { type: 'string', example: 'Instituto Nacional de Investigaciones Eléctricas' }
+                }
+            },
+            CrearParticipanteExternoDTO: {
+                type: 'object',
+                required: ['Nombre', 'ApellidoP'],
+                properties: {
+                    Nombre: { type: 'string', example: 'Roberto' },
+                    ApellidoP: { type: 'string', example: 'Martínez' },
+                    ApellidoM: { type: 'string', example: 'Soto' },
+                    CorreoElectronico: { type: 'string', example: 'roberto.martinez@empresa.com' },
+                    Institucion: { type: 'string', example: 'Instituto Nacional de Investigaciones Eléctricas' }
+                }
+            },
+            AsignarParticipanteExternoDTO: {
+                type: 'object',
+                required: ['Id_TrabajoR', 'Id_ParticipanteExt', 'Id_rol'],
+                properties: {
+                    Id_TrabajoR: { type: 'integer', example: 1 },
+                    Id_ParticipanteExt: { type: 'integer', example: 1 },
+                    Id_rol: { type: 'integer', example: 2, description: 'ID del rol institucional' }
+                }
+            },
+            EstadoTrabajoRecepcional: {
+                type: 'object',
+                properties: {
+                    Id_EstadoTrabajo: { type: 'integer', example: 1 },
+                    Fecha: { type: 'string', format: 'date-time', example: '2026-06-25T10:00:00.000Z' },
+                    Id_Estado: { type: 'integer', example: 2 },
+                    Id_TrabajoR: { type: 'integer', example: 1 }
                 }
             },
             ErrorRespuesta: {

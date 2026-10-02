@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 const RolDirectivo = require('./RolDirectivo');
+const Carrera = require('./Carrera');
 
 const Academico = sequelize.define('Academico', {
     Numero_Personal: {
@@ -28,6 +29,10 @@ const Academico = sequelize.define('Academico', {
     Contrasenia: {
         type: DataTypes.STRING,
         allowNull: false
+    },
+    Id_Carrera: {
+        type: DataTypes.INTEGER,
+        allowNull: true
     }
 }, {
     tableName: 'Academico',
@@ -36,5 +41,8 @@ const Academico = sequelize.define('Academico', {
 
 RolDirectivo.hasMany(Academico, { foreignKey: 'Id_Rol' });
 Academico.belongsTo(RolDirectivo, { foreignKey: 'Id_Rol' });
+
+Carrera.hasMany(Academico, { foreignKey: 'Id_Carrera' });
+Academico.belongsTo(Carrera, { foreignKey: 'Id_Carrera' });
 
 module.exports = Academico;

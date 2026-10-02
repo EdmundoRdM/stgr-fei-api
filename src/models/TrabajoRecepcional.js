@@ -19,11 +19,23 @@ const TrabajoRecepcional = sequelize.define('TrabajoRecepcional', {
         allowNull: true,
         defaultValue: 'Pendiente'
     },
+    Tomo: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    Numero_Folio: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
     Modalidad: {
         type: DataTypes.STRING,
         allowNull: false
     },
     Fecha_defensa: {
+        type: DataTypes.DATE,
+        allowNull: true
+    },
+    Fecha_fin_defensa: {
         type: DataTypes.DATE,
         allowNull: true
     },

@@ -150,6 +150,68 @@ router.get('/estudiante/trabajo/:idTrabajo', participanteController.listarEstudi
  */
 router.delete('/estudiante/:id', participanteController.eliminarEstudiante);
 
+/**
+ * @swagger
+ * /api/participantes/externo:
+ *   post:
+ *     summary: Asignar un participante externo a un trabajo recepcional
+ *     tags: [Participantes]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [Id_TrabajoR, Id_ParticipanteExt, Id_rol]
+ *             properties:
+ *               Id_TrabajoR:
+ *                 type: integer
+ *               Id_ParticipanteExt:
+ *                 type: integer
+ *               Id_rol:
+ *                 type: integer
+ *     responses:
+ *       201:
+ *         description: Participante externo asignado correctamente
+ */
+router.post('/externo', participanteController.asignarExterno);
+
+/**
+ * @swagger
+ * /api/participantes/externo/trabajo/{idTrabajo}:
+ *   get:
+ *     summary: Listar los participantes externos de un trabajo recepcional
+ *     tags: [Participantes]
+ *     parameters:
+ *       - in: path
+ *         name: idTrabajo
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Lista de participantes externos asignados
+ */
+router.get('/externo/trabajo/:idTrabajo', participanteController.listarExternosPorTrabajo);
+
+/**
+ * @swagger
+ * /api/participantes/externo/{id}:
+ *   delete:
+ *     summary: Desvincular un participante externo de un trabajo recepcional
+ *     tags: [Participantes]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Participante externo removido exitosamente
+ */
+router.delete('/externo/:id', participanteController.eliminarExterno);
+
 // Compatibilidad previa
 router.post('/', participanteController.asignarAcademico);
 router.delete('/:id', participanteController.eliminarAcademico);

@@ -1,5 +1,6 @@
 const Academico = require("../models/Academico");
 const RolDirectivo = require("../models/RolDirectivo");
+const Carrera = require("../models/Carrera");
 const SecretariaGrupo = require("../models/SecretariaGrupo");
 const bcrypt = require("bcrypt");
 
@@ -7,7 +8,10 @@ const autenticarUsuario = async (correo, contrasenia) => {
     // 1. Intentar autenticar como Académico (Profesor o Directivo / Secretaria de Facultad)
     const academico = await Academico.findOne({
         where: { CorreoInstitucional: correo },
-        include: [{ model: RolDirectivo, attributes: ["Nombre_Rol"] }]
+        include: [
+            { model: RolDirectivo, attributes: ["Nombre_Rol"] },
+            { model: Carrera, attributes: ["Id_Carrera", "NombreCarrera"] }
+        ]
     });
 
     if (academico) {
@@ -24,7 +28,9 @@ const autenticarUsuario = async (correo, contrasenia) => {
             numeroPersonal: academico.Numero_Personal,
             nombre: `${academico.Nombre} ${academico.ApellidoP}`,
             correo: academico.CorreoInstitucional,
-            rol: rolNombre
+            rol: rolNombre,
+            idCarrera: academico.Id_Carrera,
+            carrera: academico.Carrera ? academico.Carrera.NombreCarrera : null
         };
     }
 

@@ -14,6 +14,11 @@ const Lugar = sequelize.define('Lugar', {
     Edificio: {
         type: DataTypes.STRING,
         allowNull: true
+    },
+    Estado: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'disponible'
     }
 }, {
     tableName: 'Lugar',

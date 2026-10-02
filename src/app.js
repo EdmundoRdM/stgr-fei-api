@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const sequelize = require('./config/database');
@@ -20,15 +21,23 @@ const ParticipantesTrabajo = require('./models/ParticipantesTrabajo');
 const EstudianteTrabajo = require('./models/EstudianteTrabajo');
 const participanteRoutes = require('./routes/participanteRoutes');
 
-// Modelos del módulo de Secretaría y Gestión Documental
 const SecretariaGrupo = require('./models/SecretariaGrupo');
 const BitacoraAcciones = require('./models/BitacoraAcciones');
 const EstudianteDocumento = require('./models/EstudianteDocumento');
 
-// Rutas del módulo de Secretaría y Gestión Documental
+const CursoER = require('./models/CursoER');
+const AcademicoCursoER = require('./models/AcademicoCursoER');
+const CursoEREstudiante = require('./models/CursoEREstudiante');
+
+const ParticipanteExterno = require('./models/ParticipanteExterno');
+const ParticipantesExternosTrabajo = require('./models/ParticipantesExternosTrabajo');
+const EstadoTrabajoRecepcional = require('./models/EstadoTrabajoRecepcional');
+
 const secretariaRoutes = require('./routes/secretariaRoutes');
 const bitacoraRoutes = require('./routes/bitacoraRoutes');
 const documentoRoutes = require('./routes/documentoRoutes');
+const cursoRoutes = require('./routes/cursoRoutes');
+const participanteExternoRoutes = require('./routes/participanteExternoRoutes');
 
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
@@ -40,7 +49,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Documentación de la API (Swagger UI)
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/api/docs.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
@@ -57,9 +65,11 @@ app.use('/api/trabajos', trabajoRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/participantes', participanteRoutes);
 app.use('/api/participantes-trabajo', participanteRoutes);
+app.use('/api/participantes-externos', participanteExternoRoutes);
 app.use('/api/secretarias', secretariaRoutes);
 app.use('/api/bitacora', bitacoraRoutes);
 app.use('/api/documentos', documentoRoutes);
+app.use('/api/cursos', cursoRoutes);
 
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'OK', message: 'API del SGTR-FEI en funcionamiento' });
